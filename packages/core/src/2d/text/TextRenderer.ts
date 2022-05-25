@@ -378,7 +378,23 @@ export class TextRenderer extends Renderer {
     const { width, height } = trimData;
     const canvas = TextUtils.updateCanvas(width, height, trimData.data);
     this._clearTexture();
-    const { _sprite: sprite } = this;
+    const { _sprite: sprite, horizontalAlignment, verticalAlignment } = this;
+
+    // Handle the case that width or height of text is larger than real width or height.
+    const { pixelsPerUnit, pivot } = sprite;
+    const originWidthInPixel = this.width * pixelsPerUnit;
+    const originHeightInPixel = this.height * pixelsPerUnit;
+    pivot.setValue(0.5, 0.5);
+    if (originWidthInPixel > width && horizontalAlignment !== TextHorizontalAlignment.Center) {
+      const diffPivotX = ((originWidthInPixel - width) * 0.5) / width;
+      pivot.x = 0.5 + diffPivotX * (horizontalAlignment === TextHorizontalAlignment.Left ? 1 : -1);
+    }
+    if (originHeightInPixel > height && verticalAlignment !== TextVerticalAlignment.Center) {
+      const diffPivotY = ((originHeightInPixel - height) * 0.5) / height;
+      pivot.y = 0.5 + diffPivotY * (verticalAlignment === TextVerticalAlignment.Top ? -1 : 1);
+    }
+    sprite.pivot = pivot;
+
     // If add fail, set texture for sprite.
     if (!this.engine._dynamicTextAtlasManager.addSprite(sprite, canvas)) {
       const texture = new Texture2D(this.engine, width, height);
